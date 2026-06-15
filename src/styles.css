@@ -406,8 +406,10 @@ button { font-family: inherit; cursor: pointer; }
 .li-price { font-weight: 700; font-size: 15px; }
 
 .drawer-foot { padding: 20px 24px 26px; border-top: 1px solid var(--line); background: var(--surface); }
-.subtotal-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
-.ship-note { color: var(--ink-soft); font-size: 13px; margin: 8px 0 16px; }
+.subtotal-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; color: var(--ink-soft); letter-spacing: -0.01em; margin-bottom: 6px; }
+.subtotal-row.discount-row { color: var(--sale, #c0392b); }
+.subtotal-row.total-row { font-size: 18px; font-weight: 800; color: var(--ink); margin: 8px 0 0; }
+.ship-note { color: var(--ink-soft); font-size: 13px; margin: 12px 0 16px; }
 
 .drawer-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 30px; gap: 8px; }
 .drawer-empty h4 { margin: 6px 0 0; font-size: 20px; }
@@ -448,9 +450,9 @@ button { font-family: inherit; cursor: pointer; }
     radial-gradient(800px 400px at 50% 0%, rgba(14, 124, 123, 0.09), transparent 60%),
     var(--bg);
 }
-.boot-mark { position: relative; display: grid; place-items: center; margin-bottom: 30px; }
+.boot-mark { display: flex; flex-direction: column; align-items: center; gap: 22px; margin-bottom: 30px; }
 .boot-ring {
-  position: absolute; width: 92px; height: 92px; border-radius: 50%;
+  width: 54px; height: 54px; border-radius: 50%;
   border: 3px solid var(--accent-soft); border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
@@ -539,6 +541,7 @@ button { font-family: inherit; cursor: pointer; }
 .summary-price { font-size: 14px; font-weight: 700; }
 .summary-totals { padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
 .summary-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--ink-soft); }
+.summary-row.discount-row { color: var(--sale, #c0392b); font-weight: 600; }
 .summary-row.total { font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; margin-top: 4px; }
 
 .checkout-body.confirm {

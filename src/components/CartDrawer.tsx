@@ -6,7 +6,7 @@ import SmartImage from './SmartImage';
 import Checkout from './Checkout';
 
 export default function CartDrawer() {
-  const { items, isOpen, close, setQty, remove, subtotal, count } = useCart();
+  const { items, isOpen, close, setQty, remove, subtotal, cartDiscount, total, count } = useCart();
   const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
@@ -85,6 +85,16 @@ export default function CartDrawer() {
               <div className="subtotal-row">
                 <span>Subtotal</span>
                 <span>{formatUSD(subtotal)}</span>
+              </div>
+              {cartDiscount > 0 && (
+                <div className="subtotal-row discount-row">
+                  <span>Cart discount</span>
+                  <span>−{formatUSD(cartDiscount)}</span>
+                </div>
+              )}
+              <div className="subtotal-row total-row">
+                <span>Total</span>
+                <span>{formatUSD(total)}</span>
               </div>
               <p className="ship-note">Free shipping & taxes calculated at checkout.</p>
               <button className="btn btn-primary full" onClick={checkout}>

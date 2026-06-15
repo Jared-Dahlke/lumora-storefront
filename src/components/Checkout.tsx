@@ -44,7 +44,7 @@ const SHIPPING_FIELDS: { key: keyof FormState; label: string; type?: string; hal
 ];
 
 export default function Checkout({ onClose }: Props) {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal, cartDiscount, total, clear } = useCart();
   const [step, setStep] = useState<Step>('shipping');
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, boolean>>>({});
@@ -245,7 +245,7 @@ export default function Checkout({ onClose }: Props) {
                           Placing order…
                         </span>
                       ) : (
-                        `Place order · ${formatUSD(subtotal)}`
+                        `Place order · ${formatUSD(total)}`
                       )}
                     </button>
                   </div>
@@ -273,13 +273,19 @@ export default function Checkout({ onClose }: Props) {
                   <span>Subtotal</span>
                   <span>{formatUSD(subtotal)}</span>
                 </div>
+                {cartDiscount > 0 && (
+                  <div className="summary-row discount-row">
+                    <span>Cart discount</span>
+                    <span>−{formatUSD(cartDiscount)}</span>
+                  </div>
+                )}
                 <div className="summary-row">
                   <span>Shipping</span>
                   <span>Free</span>
                 </div>
                 <div className="summary-row total">
                   <span>Total</span>
-                  <span>{formatUSD(subtotal)}</span>
+                  <span>{formatUSD(total)}</span>
                 </div>
               </div>
             </aside>

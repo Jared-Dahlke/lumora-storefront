@@ -178,6 +178,59 @@ export async function placeOrder(input: CheckoutInput): Promise<PlacedOrder> {
   };
 }
 
+export interface CartPricing {
+  /** Total cart-discount amount (cents) applied on top of the per-line sale prices. */
+  cartDiscountCent: number;
+  currencyCode: string;
+}
+
+interface PricedCart {
+  id: string;
+  version: number;
+  totalPrice?: { centAmount: number; currencyCode: string };
+  lineItems?: {
+    quantity: number;
+    price: { value: { centAmount: number }; discounted?: { value: { centAmount: number } } };
+    totalPrice: { centAmount: number };
+  }[];
+}
+
+/**
+ * Prices the current cart on the backend so cart-level discounts (which depend on cart predicates
+ * and can't be computed client-side) are reflected in the UI. Creates a server cart, adds the line
+ * items, and returns the total cart-discount amount — i.e. the reduction BELOW the per-line sale
+ * prices the storefront already shows. Returns a zero discount if anything fails (cold start, etc.)
+ * so the UI degrades to the local subtotal.
+ */
+export async function priceCart(
+  lineItems: { sku: string; quantity: number }[],
+): Promise<CartPricing> {
+  if (lineItems.length === 0) return { cartDiscountCent: 0, currencyCode: 'USD' };
+  try {
+    const token = await getAnonymousToken();
+    let cart = await authedPost<PricedCart>(token, `/${PROJECT_KEY}/me/carts`, {
+      currency: 'USD',
+      country: 'US',
+    });
+    cart = await authedPost<PricedCart>(token, `/${PROJECT_KEY}/me/carts/${cart.id}`, {
+      version: cart.version,
+      actions: lineItems.map((li) => ({ action: 'addLineItem', sku: li.sku, quantity: li.quantity })),
+    });
+    // Cart discount per line = (sale unit price × qty) − line total (after cart discounts).
+    let cartDiscountCent = 0;
+    for (const li of cart.lineItems ?? []) {
+      const unit = li.price.discounted?.value.centAmount ?? li.price.value.centAmount;
+      cartDiscountCent += unit * li.quantity - li.totalPrice.centAmount;
+    }
+    return {
+      cartDiscountCent: Math.max(0, cartDiscountCent),
+      currencyCode: cart.totalPrice?.currencyCode ?? 'USD',
+    };
+  } catch {
+    return { cartDiscountCent: 0, currencyCode: 'USD' };
+  }
+}
+
 export async function fetchProducts(): Promise<Product[]> {
   const token = await getAnonymousToken();
   const res = await fetch(
