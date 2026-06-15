@@ -7,6 +7,8 @@ export interface Money {
 export interface Price {
   id: string;
   value: Money;
+  /** Set by an active product discount (computed by the backend at read time). */
+  discounted?: { value: Money };
 }
 
 export interface ProductImage {
@@ -42,7 +44,9 @@ export interface Product {
   slug: string;
   description: string;
   category: string;
-  priceUSD: number; // cents
+  priceUSD: number; // cents — the regular (list) price
+  /** Discounted price in cents from an active product discount; present only when on sale. */
+  salePriceUSD?: number;
   image?: string;
 }
 

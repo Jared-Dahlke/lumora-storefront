@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useCart } from '../cart';
-import { formatUSD } from '../utils';
+import { formatUSD, effectivePrice } from '../utils';
 import { useEscapeKey, useBodyScrollLock } from '../hooks';
 import { placeOrder, type PlacedOrder, type ShippingAddress } from '../api';
 import SmartImage from './SmartImage';
@@ -264,7 +264,7 @@ export default function Checkout({ onClose }: Props) {
                       <span className="summary-qty">{qty}</span>
                     </div>
                     <span className="summary-name">{product.name}</span>
-                    <span className="summary-price">{formatUSD(product.priceUSD * qty)}</span>
+                    <span className="summary-price">{formatUSD(effectivePrice(product) * qty)}</span>
                   </div>
                 ))}
               </div>

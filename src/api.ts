@@ -51,8 +51,12 @@ export async function getAnonymousToken(maxAttempts = 8): Promise<string> {
 
 function toProduct(p: ProductProjection): Product {
   const mv = p.masterVariant;
-  const usd = mv.prices?.find((pr) => pr.value.currencyCode === 'USD')?.value.centAmount;
+  const usdPrice = mv.prices?.find((pr) => pr.value.currencyCode === 'USD');
+  const usd = usdPrice?.value.centAmount;
   const anyPrice = mv.prices?.[0]?.value.centAmount;
+  const list = usd ?? anyPrice ?? 0;
+  // A product discount (applied by the backend) surfaces as `discounted.value` on the price.
+  const sale = usdPrice?.discounted?.value.centAmount ?? mv.prices?.[0]?.discounted?.value.centAmount;
   const category =
     (mv.attributes?.find((a) => a.name === 'category')?.value as string | undefined) ?? 'All';
   return {
@@ -62,7 +66,8 @@ function toProduct(p: ProductProjection): Product {
     slug: p.slug.en ?? p.id,
     description: p.description?.en ?? '',
     category,
-    priceUSD: usd ?? anyPrice ?? 0,
+    priceUSD: list,
+    ...(sale !== undefined && sale < list ? { salePriceUSD: sale } : {}),
     image: mv.images?.[0]?.url,
   };
 }

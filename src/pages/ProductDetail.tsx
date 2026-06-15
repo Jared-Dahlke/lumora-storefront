@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import type { Product } from '../types';
 import { useCart } from '../cart';
-import { formatUSD } from '../utils';
+import { formatUSD, discountPct } from '../utils';
 import SmartImage from '../components/SmartImage';
 import ProductCard from '../components/ProductCard';
 
@@ -50,7 +50,15 @@ export default function ProductDetail({ products }: { products: Product[] }) {
         </div>
         <div className="detail-info">
           <h1>{product.name}</h1>
-          <div className="detail-price">{formatUSD(product.priceUSD)}</div>
+          {product.salePriceUSD !== undefined ? (
+            <div className="detail-price on-sale">
+              <span className="price-now">{formatUSD(product.salePriceUSD)}</span>
+              <span className="price-was">{formatUSD(product.priceUSD)}</span>
+              {discountPct(product) > 0 && <span className="sale-badge inline">−{discountPct(product)}%</span>}
+            </div>
+          ) : (
+            <div className="detail-price">{formatUSD(product.priceUSD)}</div>
+          )}
           <p className="detail-desc">
             {product.description ||
               'Engineered for everyday wellness — premium materials, effortless setup, and insights you can actually use.'}

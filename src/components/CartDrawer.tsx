@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCart } from '../cart';
-import { formatUSD } from '../utils';
+import { formatUSD, effectivePrice } from '../utils';
 import { useEscapeKey, useBodyScrollLock } from '../hooks';
 import SmartImage from './SmartImage';
 import Checkout from './Checkout';
@@ -70,7 +70,12 @@ export default function CartDrawer() {
                         <span>{qty}</span>
                         <button onClick={() => setQty(product.id, qty + 1)} aria-label="Increase quantity">+</button>
                       </div>
-                      <span className="li-price">{formatUSD(product.priceUSD * qty)}</span>
+                      <span className="li-price">
+                        {product.salePriceUSD !== undefined && (
+                          <span className="price-was sm">{formatUSD(product.priceUSD * qty)}</span>
+                        )}
+                        {formatUSD(effectivePrice(product) * qty)}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { CartItem, Product } from './types';
+import { effectivePrice } from './utils';
 
 interface CartContextValue {
   items: CartItem[];
@@ -22,7 +23,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => {
     const count = items.reduce((n, i) => n + i.qty, 0);
-    const subtotal = items.reduce((n, i) => n + i.qty * i.product.priceUSD, 0);
+    const subtotal = items.reduce((n, i) => n + i.qty * effectivePrice(i.product), 0);
     return {
       items,
       count,
