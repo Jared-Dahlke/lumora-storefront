@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useCart } from '../cart';
 import { formatUSD } from '../utils';
 import SmartImage from './SmartImage';
+import Checkout from './Checkout';
 
 export default function CartDrawer() {
-  const { items, isOpen, close, setQty, remove, subtotal, count, clear } = useCart();
-  const [ordered, setOrdered] = useState(false);
+  const { items, isOpen, close, setQty, remove, subtotal, count } = useCart();
+  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setOrdered(false);
+    if (isOpen) setCheckingOut(false);
   }, [isOpen]);
 
   useEffect(() => {
@@ -19,16 +20,17 @@ export default function CartDrawer() {
   }, [isOpen]);
 
   const checkout = () => {
-    setOrdered(true);
-    clear();
+    setCheckingOut(true);
+    close();
   };
 
   return (
     <>
+      {checkingOut && <Checkout onClose={() => setCheckingOut(false)} />}
       <div className={`scrim ${isOpen ? 'show' : ''}`} onClick={close} aria-hidden />
       <aside className={`drawer ${isOpen ? 'open' : ''}`} aria-label="Shopping cart" aria-hidden={!isOpen}>
         <div className="drawer-head">
-          <h3>{ordered ? 'Order confirmed' : `Your cart${count ? ` · ${count}` : ''}`}</h3>
+          <h3>{`Your cart${count ? ` · ${count}` : ''}`}</h3>
           <button className="icon-btn" onClick={close} aria-label="Close cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -36,20 +38,7 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {ordered ? (
-          <div className="drawer-empty">
-            <div className="confirm-check">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            </div>
-            <h4>Thank you.</h4>
-            <p>Your Lumora order is on its way. A confirmation has been sent to your inbox.</p>
-            <button className="btn btn-primary full" onClick={close}>
-              Continue shopping
-            </button>
-          </div>
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <div className="drawer-empty">
             <div className="empty-bag">🛍️</div>
             <h4>Your cart is empty</h4>
