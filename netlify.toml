@@ -1,0 +1,16 @@
+[build]
+  command = "pnpm install && pnpm build"
+  publish = "dist"
+
+[build.environment]
+  VITE_API_BASE_URL = "https://openct-api.onrender.com"
+  VITE_AUTH_BASE_URL = "https://openct-auth.onrender.com"
+  VITE_PROJECT_KEY = "openct-dev"
+  VITE_CLIENT_ID = "lumora-store"
+  VITE_CLIENT_SECRET = "Dk9ECs80MehnXH-biDZT4qKJSxUwgw7j"
+
+# SPA fallback so client-side routes (e.g. /product/:slug) resolve to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
