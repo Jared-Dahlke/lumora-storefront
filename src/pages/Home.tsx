@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
+import SmartImage from '../components/SmartImage';
+import { HERO_IMAGE, HOW_STEPS, FEATURE_BANDS, TESTIMONIALS, TRUST_ITEMS } from '../content';
 
 const CATEGORY_ORDER = ['Sensors', 'Wearables', 'Supplements', 'Membership'];
 
@@ -24,19 +26,21 @@ function Hero({ onShop }: { onShop: () => void }) {
             <button className="btn btn-primary lg" onClick={onShop}>
               Shop the collection
             </button>
-            <a className="btn btn-ghost lg" href="#about">
+            <a className="btn btn-ghost lg" href="#how">
               How it works
             </a>
           </div>
           <div className="hero-trust">
-            <span>✓ FSA / HSA eligible</span>
-            <span>✓ Free 2-day shipping</span>
-            <span>✓ Cancel anytime</span>
+            <span>FSA / HSA eligible</span>
+            <span>Free 2-day shipping</span>
+            <span>Cancel anytime</span>
           </div>
         </div>
         <div className="hero-visual">
-          <div className="hero-orb" />
-          <div className="hero-card">
+          <div className="hero-photo">
+            <SmartImage src={HERO_IMAGE} alt="A person living actively while wearing a Lumora sensor" name="Lumora" />
+          </div>
+          <div className="hero-card" aria-hidden="true">
             <div className="hero-card-row">
               <span className="hc-label">Glucose</span>
               <span className="hc-trend up">Stable</span>
@@ -65,26 +69,99 @@ function Hero({ onShop }: { onShop: () => void }) {
   );
 }
 
-function About() {
-  const features = [
-    { t: 'Wear it & forget it', d: 'A coin-sized sensor stays on for 15 days. Shower, sleep, train — it just works.' },
-    { t: 'Insights, not data dumps', d: 'Lumora turns raw signals into plain-language guidance you can act on today.' },
-    { t: 'Built on real science', d: 'Clinical-grade accuracy from the team that pioneered continuous monitoring.' },
-  ];
+function LogoStrip() {
+  const lines = ['As featured in', 'WELLNESS+', 'THE EDIT', 'VITAL', 'LONGEVITY', 'BIOHACK'];
   return (
-    <section id="about" className="about">
+    <div className="logo-strip">
+      <div className="container logo-strip-inner">
+        {lines.map((l, i) => (
+          <span key={l} className={i === 0 ? 'logo-strip-lead' : 'logo-strip-name'}>
+            {l}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HowItWorks() {
+  return (
+    <section id="how" className="how">
       <div className="container">
-        <span className="eyebrow center">Why Lumora</span>
-        <h2 className="section-title center">Clarity that fits your life.</h2>
-        <div className="feature-grid">
-          {features.map((f) => (
-            <div key={f.t} className="feature">
-              <div className="feature-icon" />
-              <h3>{f.t}</h3>
-              <p>{f.d}</p>
+        <span className="eyebrow center">How it works</span>
+        <h2 className="section-title center">Clarity in three simple steps.</h2>
+        <div className="how-grid">
+          {HOW_STEPS.map((s) => (
+            <div key={s.n} className="how-step">
+              <span className="how-num">{s.n}</span>
+              <h3>{s.title}</h3>
+              <p>{s.body}</p>
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureBands() {
+  return (
+    <section className="bands">
+      {FEATURE_BANDS.map((f, i) => (
+        <div key={f.label} className={`band ${i % 2 === 1 ? 'reverse' : ''}`}>
+          <div className="container band-inner">
+            <div className="band-media">
+              <SmartImage src={f.image} alt={f.label} name={f.label} />
+            </div>
+            <div className="band-copy">
+              <span className="band-stat">{f.stat}</span>
+              <h3>{f.label}</h3>
+              <p>{f.body}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function Testimonials() {
+  return (
+    <section className="testimonials">
+      <div className="container">
+        <span className="eyebrow center">Loved by thousands</span>
+        <h2 className="section-title center">Real people, real clarity.</h2>
+        <div className="testimonial-grid">
+          {TESTIMONIALS.map((t) => (
+            <figure key={t.name} className="testimonial">
+              <blockquote>“{t.quote}”</blockquote>
+              <figcaption>
+                <span className="testimonial-avatar">
+                  <SmartImage src={t.image} alt={t.name} name={t.name} />
+                </span>
+                <span>
+                  <strong>{t.name}</strong>
+                  <small>{t.role}</small>
+                </span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TrustBand() {
+  return (
+    <section className="trust-band">
+      <div className="container trust-band-grid">
+        {TRUST_ITEMS.map((t) => (
+          <div key={t.title} className="trust-item">
+            <strong>{t.title}</strong>
+            <span>{t.body}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -123,7 +200,9 @@ export default function Home({ products }: { products: Product[] }) {
   return (
     <main>
       <Hero onShop={scrollToShop} />
-      <About />
+      <LogoStrip />
+      <HowItWorks />
+      <FeatureBands />
 
       <section id="shop" className="shop">
         <div className="container">
@@ -133,7 +212,7 @@ export default function Home({ products }: { products: Product[] }) {
               <h2 className="section-title">Everything you need to feel your best.</h2>
             </div>
             <div className="search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m21 21-4.3-4.3" />
               </svg>
@@ -177,6 +256,9 @@ export default function Home({ products }: { products: Product[] }) {
           )}
         </div>
       </section>
+
+      <Testimonials />
+      <TrustBand />
     </main>
   );
 }

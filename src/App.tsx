@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { CartProvider } from './cart';
 import { fetchProducts, warmUp } from './api';
 import type { Product } from './types';
@@ -52,13 +52,25 @@ export default function App() {
     );
   }
 
+  function NotFound() {
+    return (
+      <main className="container detail-missing">
+        <h2>Page not found</h2>
+        <p>The page you’re looking for doesn’t exist or has moved.</p>
+        <Link className="btn btn-primary" to="/">
+          Back to home
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <CartProvider>
       <Header />
       <Routes>
         <Route path="/" element={<Home products={products} />} />
         <Route path="/product/:slug" element={<ProductDetail products={products} />} />
-        <Route path="*" element={<Home products={products} />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
       <CartDrawer />

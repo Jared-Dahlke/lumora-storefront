@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useCart } from '../cart';
 import { formatUSD } from '../utils';
+import { useEscapeKey, useBodyScrollLock } from '../hooks';
 import { placeOrder, type PlacedOrder, type ShippingAddress } from '../api';
 import SmartImage from './SmartImage';
 
@@ -53,12 +54,9 @@ export default function Checkout({ onClose }: Props) {
   // Demo-only card fields — never sent anywhere.
   const [card, setCard] = useState({ number: '', expiry: '', cvc: '' });
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
+  useBodyScrollLock(true);
+  // Allow Escape to dismiss, but not mid-placement or after the order is confirmed.
+  useEscapeKey(step !== 'placing' && step !== 'confirmed', onClose);
 
   const set = (key: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -85,6 +83,11 @@ export default function Checkout({ onClose }: Props) {
   };
 
   const handlePlaceOrder = async () => {
+    if (step === 'placing') return; // guard against double-submit
+    if (lineItems.length === 0) {
+      setSubmitError('Your cart is empty. Add an item before placing your order.');
+      return;
+    }
     setSubmitError(null);
     setStep('placing');
     const address: ShippingAddress = {

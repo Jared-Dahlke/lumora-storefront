@@ -3,11 +3,18 @@ import type { Product } from '../types';
 import { useCart } from '../cart';
 import { formatUSD } from '../utils';
 import SmartImage from '../components/SmartImage';
+import ProductCard from '../components/ProductCard';
 
 const TRUST = [
   { t: 'Free 2-day shipping', d: 'On every order, always.' },
   { t: 'Cancel anytime', d: 'No contracts, no fees.' },
-  { t: '30-day guarantee', d: 'Love it or your money back.' },
+  { t: '15-day guarantee', d: 'Love it or your money back.' },
+];
+
+const HIGHLIGHTS = [
+  'Clinical-grade accuracy, validated in the lab',
+  'Effortless setup — ready in under a minute',
+  'Works seamlessly with the Lumora app',
 ];
 
 export default function ProductDetail({ products }: { products: Product[] }) {
@@ -27,6 +34,10 @@ export default function ProductDetail({ products }: { products: Product[] }) {
     );
   }
 
+  const related = products
+    .filter((p) => p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+
   return (
     <main className="container detail">
       <Link to="/" className="breadcrumb">
@@ -44,6 +55,16 @@ export default function ProductDetail({ products }: { products: Product[] }) {
             {product.description ||
               'Engineered for everyday wellness — premium materials, effortless setup, and insights you can actually use.'}
           </p>
+          <ul className="detail-highlights">
+            {HIGHLIGHTS.map((h) => (
+              <li key={h}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                {h}
+              </li>
+            ))}
+          </ul>
           <button
             className="btn btn-primary lg full"
             onClick={() => {
@@ -51,7 +72,7 @@ export default function ProductDetail({ products }: { products: Product[] }) {
               open();
             }}
           >
-            Add to cart
+            Add to cart · {formatUSD(product.priceUSD)}
           </button>
           <div className="trust-badges">
             {TRUST.map((b) => (
@@ -63,6 +84,17 @@ export default function ProductDetail({ products }: { products: Product[] }) {
           </div>
         </div>
       </div>
+
+      {related.length > 0 && (
+        <section className="related">
+          <h2 className="section-title">You might also like</h2>
+          <div className="grid">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

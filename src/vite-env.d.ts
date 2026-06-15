@@ -11,3 +11,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// `inert` ships in modern browsers but isn't in this @types/react version yet.
+import 'react';
+declare module 'react' {
+  interface HTMLAttributes<T> {
+    inert?: boolean;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCart } from '../cart';
 import { formatUSD } from '../utils';
+import { useEscapeKey, useBodyScrollLock } from '../hooks';
 import SmartImage from './SmartImage';
 import Checkout from './Checkout';
 
@@ -12,12 +13,8 @@ export default function CartDrawer() {
     if (isOpen) setCheckingOut(false);
   }, [isOpen]);
 
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
+  useEscapeKey(isOpen, close);
 
   const checkout = () => {
     setCheckingOut(true);
@@ -28,7 +25,12 @@ export default function CartDrawer() {
     <>
       {checkingOut && <Checkout onClose={() => setCheckingOut(false)} />}
       <div className={`scrim ${isOpen ? 'show' : ''}`} onClick={close} aria-hidden />
-      <aside className={`drawer ${isOpen ? 'open' : ''}`} aria-label="Shopping cart" aria-hidden={!isOpen}>
+      <aside
+        className={`drawer ${isOpen ? 'open' : ''}`}
+        aria-label="Shopping cart"
+        aria-hidden={!isOpen}
+        inert={!isOpen}
+      >
         <div className="drawer-head">
           <h3>{`Your cart${count ? ` · ${count}` : ''}`}</h3>
           <button className="icon-btn" onClick={close} aria-label="Close cart">
