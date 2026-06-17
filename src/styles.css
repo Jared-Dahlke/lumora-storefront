@@ -333,6 +333,18 @@ button { font-family: inherit; cursor: pointer; }
   padding: 5px 10px; border-radius: 999px; box-shadow: var(--shadow-sm);
 }
 .sale-badge.inline { position: static; display: inline-block; vertical-align: middle; }
+
+/* ---------- Subscription (Subscribe & Save) ---------- */
+.sub-badge {
+  position: absolute; bottom: 12px; left: 12px;
+  background: var(--accent); color: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px; box-shadow: var(--shadow-sm);
+}
+.subscribe-block { margin-top: 12px; }
+.subscribe-btn { border-color: var(--accent); color: var(--accent); }
+.subscribe-note { color: var(--ink-soft); font-size: 13px; margin: 8px 0 0; }
+.subscribe-msg { color: var(--accent-deep); font-weight: 600; font-size: 14px; margin: 10px 0 0; }
 .price-was { color: var(--ink-soft); font-weight: 600; text-decoration: line-through; opacity: 0.7; }
 .price-was.sm { font-size: 12.5px; margin-right: 6px; }
 .price-now { color: var(--sale, #c0392b); font-weight: 800; }
