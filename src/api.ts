@@ -1,4 +1,5 @@
 import type { Product, ProductProjection } from './types';
+import { STOREFRONT_SKUS, isSubscriptionSku } from './catalog';
 
 const API = import.meta.env.VITE_API_BASE_URL || 'https://openct-api.onrender.com';
 const AUTH = import.meta.env.VITE_AUTH_BASE_URL || 'https://openct-auth.onrender.com';
@@ -69,6 +70,7 @@ function toProduct(p: ProductProjection): Product {
     priceUSD: list,
     ...(sale !== undefined && sale < list ? { salePriceUSD: sale } : {}),
     image: mv.images?.[0]?.url,
+    subscription: isSubscriptionSku(mv.sku),
   };
 }
 
@@ -239,5 +241,48 @@ export async function fetchProducts(): Promise<Product[]> {
   );
   if (!res.ok) throw new Error(`Could not load products (${res.status})`);
   const data = await res.json();
-  return (data.results as ProductProjection[]).map(toProduct);
+  const all = (data.results as ProductProjection[]).map(toProduct);
+  // Offer a curated set of exactly four products (one of which is the subscription), ordered to
+  // match STOREFRONT_SKUS. Falls back to all products if the curated SKUs aren't found.
+  const rank = new Map(STOREFRONT_SKUS.map((s, i) => [s.toUpperCase(), i]));
+  const curated = all
+    .filter((p) => rank.has(p.sku.toUpperCase()))
+    .sort((a, b) => (rank.get(a.sku.toUpperCase())! - rank.get(b.sku.toUpperCase())!));
+  return curated.length ? curated : all;
+}
+
+// ---------- Subscriptions (Recurring Orders) ----------
+
+export interface Subscription {
+  id: string;
+  recurringOrderState?: string;
+  nextOrderAt?: string;
+}
+
+/**
+ * Starts a "Subscribe & Save" subscription for a single SKU, wired to the ctpro Recurring Orders
+ * API. Creates a template cart with the item + a demo shipping address, then a Recurring Order
+ * against the recurrence policy (`me/recurring-orders`). ctpro materializes an order from the cart
+ * on the policy's schedule (e.g. every 30 days). Payment is demo-only — no card is charged.
+ */
+export async function createSubscription(sku: string, policyKey: string): Promise<Subscription> {
+  const token = await getAnonymousToken();
+  let cart = await authedPost<CartLike>(token, `/${PROJECT_KEY}/me/carts`, {
+    currency: 'USD',
+    country: 'US',
+  });
+  cart = await authedPost<CartLike>(token, `/${PROJECT_KEY}/me/carts/${cart.id}`, {
+    version: cart.version,
+    actions: [{ action: 'addLineItem', sku, quantity: 1 }],
+  });
+  cart = await authedPost<CartLike>(token, `/${PROJECT_KEY}/me/carts/${cart.id}`, {
+    version: cart.version,
+    actions: [
+      { action: 'setShippingAddress', address: { country: 'US', firstName: 'Demo', lastName: 'Shopper' } },
+    ],
+  });
+  return authedPost<Subscription>(token, `/${PROJECT_KEY}/me/recurring-orders`, {
+    cartId: cart.id,
+    recurrencePolicy: { key: policyKey },
+  });
 }

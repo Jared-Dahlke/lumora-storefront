@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { Product } from '../types';
 import { useCart } from '../cart';
 import { formatUSD, discountPct } from '../utils';
+import { createSubscription, type Subscription } from '../api';
+import { SUBSCRIPTION } from '../catalog';
 import SmartImage from '../components/SmartImage';
 import ProductCard from '../components/ProductCard';
 
@@ -20,7 +23,23 @@ const HIGHLIGHTS = [
 export default function ProductDetail({ products }: { products: Product[] }) {
   const { slug } = useParams();
   const { add, open } = useCart();
+  const [subBusy, setSubBusy] = useState(false);
+  const [subMsg, setSubMsg] = useState<string | null>(null);
   const product = products.find((p) => p.slug === slug);
+
+  const subscribe = async (sku: string): Promise<void> => {
+    setSubBusy(true);
+    setSubMsg(null);
+    try {
+      const sub: Subscription = await createSubscription(sku, SUBSCRIPTION.policyKey);
+      const next = sub.nextOrderAt ? new Date(sub.nextOrderAt).toLocaleDateString() : 'soon';
+      setSubMsg(`You're subscribed! Your next order ships ${next} (${SUBSCRIPTION.cadenceLabel}).`);
+    } catch (e) {
+      setSubMsg(e instanceof Error ? e.message : 'Could not start the subscription.');
+    } finally {
+      setSubBusy(false);
+    }
+  };
 
   if (!product) {
     return (
@@ -82,6 +101,21 @@ export default function ProductDetail({ products }: { products: Product[] }) {
           >
             Add to cart · {formatUSD(product.priceUSD)}
           </button>
+          {product.subscription && (
+            <div className="subscribe-block">
+              <button
+                className="btn btn-ghost lg full subscribe-btn"
+                disabled={subBusy}
+                onClick={() => void subscribe(product.sku)}
+              >
+                {subBusy ? 'Starting subscription…' : `Subscribe & Save · ${SUBSCRIPTION.cadenceLabel}`}
+              </button>
+              <p className="subscribe-note">
+                Auto-delivered {SUBSCRIPTION.cadenceLabel}. Cancel anytime. (Demo — no card charged.)
+              </p>
+              {subMsg && <p className="subscribe-msg">{subMsg}</p>}
+            </div>
+          )}
           <div className="trust-badges">
             {TRUST.map((b) => (
               <div key={b.t} className="trust-badge">

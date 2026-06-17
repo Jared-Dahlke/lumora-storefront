@@ -21,6 +21,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <Link to={`/product/${product.slug}`} className="card-media" aria-label={product.name}>
         <SmartImage src={product.image} alt={product.name} name={product.name} />
         <span className="card-chip">{product.category}</span>
+        {product.subscription && <span className="sub-badge">Subscription</span>}
         {onSale && pct > 0 && <span className="sale-badge">−{pct}%</span>}
       </Link>
       <div className="card-body">

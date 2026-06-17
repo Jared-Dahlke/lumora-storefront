@@ -48,6 +48,8 @@ export interface Product {
   /** Discounted price in cents from an active product discount; present only when on sale. */
   salePriceUSD?: number;
   image?: string;
+  /** True for the subscription product (offered as "Subscribe & Save"). */
+  subscription?: boolean;
 }
 
 export interface CartItem {
