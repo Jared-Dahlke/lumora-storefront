@@ -9,10 +9,15 @@ const CLIENT_SECRET = import.meta.env.VITE_CLIENT_SECRET || 'Dk9ECs80MehnXH-biDZ
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// The Voucherify coupon connector (cart API Extension target). Warmed alongside api/auth so the
+// first cart operation after idle doesn't hit a cold connector and time out the extension.
+const VOUCHERIFY = import.meta.env.VITE_VOUCHERIFY_URL || 'https://openct-voucherify.onrender.com';
+
 /** Fire-and-forget warm-up pings to nudge the Render free-tier services awake. */
 export function warmUp(): void {
   fetch(`${API}/health`).catch(() => {});
   fetch(`${AUTH}/health`).catch(() => {});
+  fetch(`${VOUCHERIFY}/health`).catch(() => {});
 }
 
 let cachedToken: string | null = null;
@@ -134,7 +139,7 @@ async function authedPost<T>(token: string, path: string, body: unknown): Promis
  * create cart -> add line items by SKU -> set shipping address -> create order.
  * Each cart mutation returns an incremented version that is threaded forward.
  */
-export async function placeOrder(input: CheckoutInput): Promise<PlacedOrder> {
+export async function placeOrder(input: CheckoutInput, couponCode?: string): Promise<PlacedOrder> {
   const token = await getAnonymousToken();
 
   // 1) Create the cart.
@@ -154,10 +159,14 @@ export async function placeOrder(input: CheckoutInput): Promise<PlacedOrder> {
     })),
   });
 
-  // 3) Set the shipping address.
+  // 3) Set the shipping address, plus the coupon code if one is applied — the latter fires the
+  // Voucherify cart Extension, which applies the discount to the cart before the order is created.
   cart = await authedPost<CartLike>(token, `/${PROJECT_KEY}/me/carts/${cart.id}`, {
     version: cart.version,
-    actions: [{ action: 'setShippingAddress', address: input.address }],
+    actions: [
+      { action: 'setShippingAddress', address: input.address },
+      ...(couponCode ? [{ action: 'setCustomField', name: 'couponCode', value: couponCode }] : []),
+    ],
   });
 
   // 4) Create the order from the cart.
@@ -180,16 +189,22 @@ export async function placeOrder(input: CheckoutInput): Promise<PlacedOrder> {
   };
 }
 
+export type CouponState = 'none' | 'applied' | 'invalid';
+
 export interface CartPricing {
-  /** Total cart-discount amount (cents) applied on top of the per-line sale prices. */
+  /** Total discount amount (cents) below the per-line sale prices (cart discount and/or coupon). */
   cartDiscountCent: number;
   currencyCode: string;
+  /** Coupon outcome from the Voucherify cart Extension, when a code was submitted. */
+  couponState: CouponState;
+  couponReason?: string;
 }
 
 interface PricedCart {
   id: string;
   version: number;
   totalPrice?: { centAmount: number; currencyCode: string };
+  custom?: { fields?: { couponState?: string; couponReason?: string } };
   lineItems?: {
     quantity: number;
     price: { value: { centAmount: number }; discounted?: { value: { centAmount: number } } };
@@ -199,15 +214,16 @@ interface PricedCart {
 
 /**
  * Prices the current cart on the backend so cart-level discounts (which depend on cart predicates
- * and can't be computed client-side) are reflected in the UI. Creates a server cart, adds the line
- * items, and returns the total cart-discount amount — i.e. the reduction BELOW the per-line sale
- * prices the storefront already shows. Returns a zero discount if anything fails (cold start, etc.)
- * so the UI degrades to the local subtotal.
+ * and can't be computed client-side) — and any applied coupon — are reflected in the UI. Creates a
+ * server cart, adds the line items, optionally sets a coupon code (which fires the Voucherify cart
+ * Extension), and returns the total discount + coupon outcome. Returns a zero/none result if
+ * anything fails (cold start, etc.) so the UI degrades gracefully to the local subtotal.
  */
 export async function priceCart(
   lineItems: { sku: string; quantity: number }[],
+  couponCode?: string,
 ): Promise<CartPricing> {
-  if (lineItems.length === 0) return { cartDiscountCent: 0, currencyCode: 'USD' };
+  if (lineItems.length === 0) return { cartDiscountCent: 0, currencyCode: 'USD', couponState: 'none' };
   try {
     const token = await getAnonymousToken();
     let cart = await authedPost<PricedCart>(token, `/${PROJECT_KEY}/me/carts`, {
@@ -218,18 +234,28 @@ export async function priceCart(
       version: cart.version,
       actions: lineItems.map((li) => ({ action: 'addLineItem', sku: li.sku, quantity: li.quantity })),
     });
-    // Cart discount per line = (sale unit price × qty) − line total (after cart discounts).
+    // Submit the coupon code (fires the cart Extension -> Voucherify validates + applies a discount).
+    if (couponCode) {
+      cart = await authedPost<PricedCart>(token, `/${PROJECT_KEY}/me/carts/${cart.id}`, {
+        version: cart.version,
+        actions: [{ action: 'setCustomField', name: 'couponCode', value: couponCode }],
+      });
+    }
+    // Discount per line = (sale unit price × qty) − line total (after cart discounts / coupon).
     let cartDiscountCent = 0;
     for (const li of cart.lineItems ?? []) {
       const unit = li.price.discounted?.value.centAmount ?? li.price.value.centAmount;
       cartDiscountCent += unit * li.quantity - li.totalPrice.centAmount;
     }
+    const state = cart.custom?.fields?.couponState;
     return {
       cartDiscountCent: Math.max(0, cartDiscountCent),
       currencyCode: cart.totalPrice?.currencyCode ?? 'USD',
+      couponState: state === 'applied' ? 'applied' : state === 'invalid' ? 'invalid' : 'none',
+      couponReason: cart.custom?.fields?.couponReason,
     };
   } catch {
-    return { cartDiscountCent: 0, currencyCode: 'USD' };
+    return { cartDiscountCent: 0, currencyCode: 'USD', couponState: 'none' };
   }
 }
 
