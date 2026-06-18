@@ -44,7 +44,7 @@ const SHIPPING_FIELDS: { key: keyof FormState; label: string; type?: string; hal
 ];
 
 export default function Checkout({ onClose }: Props) {
-  const { items, subtotal, cartDiscount, total, clear } = useCart();
+  const { items, subtotal, cartDiscount, total, clear, coupon, couponState } = useCart();
   const [step, setStep] = useState<Step>('shipping');
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, boolean>>>({});
@@ -100,7 +100,10 @@ export default function Checkout({ onClose }: Props) {
       state: form.state.trim(),
     };
     try {
-      const placed = await placeOrder({ email: form.email.trim(), address, lineItems });
+      const placed = await placeOrder(
+        { email: form.email.trim(), address, lineItems },
+        couponState === 'applied' ? coupon : undefined,
+      );
       setOrder(placed);
       setStep('confirmed');
       clear();

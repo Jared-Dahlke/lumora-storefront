@@ -1,22 +1,30 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CartItem, Product } from './types';
 import { effectivePrice } from './utils';
-import { priceCart } from './api';
+import { priceCart, type CouponState } from './api';
 
 interface CartContextValue {
   items: CartItem[];
   count: number;
   /** Sum of per-line sale prices (product discounts already reflected). */
   subtotal: number;
-  /** Backend-computed cart-discount amount (cents), or 0 when none / still pricing. */
+  /** Backend-computed discount amount (cents): cart discount and/or applied coupon. */
   cartDiscount: number;
-  /** Amount due after cart discounts: subtotal − cartDiscount. */
+  /** Amount due after discounts: subtotal − cartDiscount. */
   total: number;
+  /** The coupon code currently submitted (may be applied or invalid). */
+  coupon: string;
+  couponState: CouponState;
+  couponReason?: string;
+  /** True while the cart is being (re)priced on the backend. */
+  pricing: boolean;
   isOpen: boolean;
   add: (p: Product) => void;
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
   clear: () => void;
+  applyCoupon: (code: string) => void;
+  removeCoupon: () => void;
   open: () => void;
   close: () => void;
 }
@@ -27,26 +35,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [cartDiscount, setCartDiscount] = useState(0);
+  const [coupon, setCoupon] = useState('');
+  const [couponState, setCouponState] = useState<CouponState>('none');
+  const [couponReason, setCouponReason] = useState<string | undefined>(undefined);
+  const [pricing, setPricing] = useState(false);
 
-  // A signature of the cart contents; re-price on the backend whenever it changes (debounced).
+  // A signature of the cart contents + coupon; re-price on the backend whenever it changes (debounced).
   const sig = items.map((i) => `${i.product.sku}x${i.qty}`).join(',');
   const reqId = useRef(0);
   useEffect(() => {
     if (items.length === 0) {
       setCartDiscount(0);
+      setCouponState('none');
+      setCouponReason(undefined);
       return;
     }
     const id = ++reqId.current;
     const lineItems = items.map((i) => ({ sku: i.product.sku, quantity: i.qty }));
+    setPricing(true);
     const t = setTimeout(() => {
-      priceCart(lineItems).then((p) => {
+      priceCart(lineItems, coupon || undefined).then((p) => {
         // Ignore stale responses (cart changed again before this resolved).
-        if (id === reqId.current) setCartDiscount(p.cartDiscountCent);
+        if (id !== reqId.current) return;
+        setCartDiscount(p.cartDiscountCent);
+        setCouponState(p.couponState);
+        setCouponReason(p.couponReason);
+        setPricing(false);
       });
     }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sig]);
+  }, [sig, coupon]);
 
   const value = useMemo<CartContextValue>(() => {
     const count = items.reduce((n, i) => n + i.qty, 0);
@@ -58,6 +77,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subtotal,
       cartDiscount: discount,
       total: subtotal - discount,
+      coupon,
+      couponState,
+      couponReason,
+      pricing,
       isOpen,
       add: (p) =>
         setItems((cur) => {
@@ -73,10 +96,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ),
       remove: (id) => setItems((cur) => cur.filter((i) => i.product.id !== id)),
       clear: () => setItems([]),
+      applyCoupon: (code) => setCoupon(code.trim()),
+      removeCoupon: () => {
+        setCoupon('');
+        setCouponState('none');
+        setCouponReason(undefined);
+      },
       open: () => setIsOpen(true),
       close: () => setIsOpen(false),
     };
-  }, [items, isOpen, cartDiscount]);
+  }, [items, isOpen, cartDiscount, coupon, couponState, couponReason, pricing]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

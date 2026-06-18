@@ -6,8 +6,12 @@ import SmartImage from './SmartImage';
 import Checkout from './Checkout';
 
 export default function CartDrawer() {
-  const { items, isOpen, close, setQty, remove, subtotal, cartDiscount, total, count } = useCart();
+  const {
+    items, isOpen, close, setQty, remove, subtotal, cartDiscount, total, count,
+    coupon, couponState, couponReason, pricing, applyCoupon, removeCoupon,
+  } = useCart();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
 
   useEffect(() => {
     if (isOpen) setCheckingOut(false);
@@ -82,13 +86,44 @@ export default function CartDrawer() {
               ))}
             </div>
             <div className="drawer-foot">
+              <div className="coupon">
+                {couponState === 'applied' ? (
+                  <div className="coupon-applied">
+                    <span>
+                      Coupon <strong>{coupon}</strong> applied
+                    </span>
+                    <button className="coupon-remove" onClick={() => { removeCoupon(); setCodeInput(''); }}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <form
+                    className="coupon-form"
+                    onSubmit={(e) => { e.preventDefault(); if (codeInput.trim()) applyCoupon(codeInput); }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Coupon code"
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value)}
+                      aria-label="Coupon code"
+                    />
+                    <button type="submit" className="btn btn-ghost" disabled={pricing || !codeInput.trim()}>
+                      {pricing ? '…' : 'Apply'}
+                    </button>
+                  </form>
+                )}
+                {couponState === 'invalid' && (
+                  <p className="coupon-error">{couponReason || 'This code is not valid.'}</p>
+                )}
+              </div>
               <div className="subtotal-row">
                 <span>Subtotal</span>
                 <span>{formatUSD(subtotal)}</span>
               </div>
               {cartDiscount > 0 && (
                 <div className="subtotal-row discount-row">
-                  <span>Cart discount</span>
+                  <span>{couponState === 'applied' ? `Coupon (${coupon})` : 'Cart discount'}</span>
                   <span>−{formatUSD(cartDiscount)}</span>
                 </div>
               )}
