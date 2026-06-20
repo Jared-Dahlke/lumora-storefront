@@ -18,9 +18,11 @@ The app ships pointed at a live demo backend (no setup required):
 - **API:** `https://openct-api.onrender.com`
 - **Auth:** `https://openct-auth.onrender.com`
 - **Project key:** `openct-dev`
-- Storefront OAuth client with read-only / cart scopes (safe to ship in the SPA for this demo).
+- A storefront OAuth client with read-only / cart scopes. Its **secret stays server-side** — the
+  browser never sees it (see [Token BFF](#token-bff) below).
 
-Flow: get an anonymous OAuth token, then `GET /{projectKey}/product-projections?staged=false&limit=20`. Search/filter/sort are done client-side. Prices come back in cents and are formatted as USD.
+Flow: the browser asks the same-origin token BFF (`GET /api/token`) for an anonymous OAuth token,
+then `GET /{projectKey}/product-projections?staged=false&limit=20`. Search/filter/sort are done client-side. Prices come back in cents and are formatted as USD.
 
 > Note: the first load can take 20–50s while Render wakes the free-tier services. That's expected — the loading screen explains it.
 
@@ -44,13 +46,28 @@ pnpm preview
 
 Everything defaults to the live demo backend, so no `.env` is needed. To point at a different openct deployment, copy `.env.example` to `.env` and edit the `VITE_*` values.
 
+## Token BFF
+
+The anonymous OAuth grant runs **server-side** in a Netlify Function (`netlify/functions/token.mjs`),
+so the client secret never ships in the browser bundle. The SPA `GET`s the same-origin `/api/token`
+endpoint (mapped in `netlify.toml`); the function performs the HTTP-Basic `client_credentials` grant
+using `CLIENT_SECRET` from the Netlify **runtime** env and returns only the access token.
+
+For local end-to-end testing you need the [Netlify CLI](https://docs.netlify.com/cli/get-started/)
+and a gitignored `.env` with `CLIENT_SECRET` (see `.env.example`), then `netlify dev`. Plain
+`pnpm dev` serves the SPA but not the function, so token fetches will 404.
+
 ## Deploy to Netlify
 
-This repo is deploy-ready. `netlify.toml` already sets the build command (`pnpm install && pnpm build`), publish directory (`dist`), the `VITE_*` env vars, and an SPA redirect (`/* → /index.html`).
+This repo is deploy-ready. `netlify.toml` sets the build command (`pnpm install && pnpm build`),
+publish directory (`dist`), the public `VITE_*` env vars, the functions directory, the `/api/token`
+redirect, and the SPA fallback (`/* → /index.html`).
 
 1. In Netlify, **Add new site → Import an existing project** and pick this repo.
-2. Netlify reads `netlify.toml` automatically — no manual config needed.
-3. Deploy.
+2. **Set the runtime env vars** in **Site settings → Environment variables**: `CLIENT_SECRET`
+   (required) and, if they differ from the defaults, `CLIENT_ID` / `PROJECT_KEY` / `AUTH_BASE_URL`.
+   These are runtime-only and must **not** be committed to `netlify.toml`.
+3. Deploy. (Without `CLIENT_SECRET` set, `/api/token` returns 500 and the store can't load — by design.)
 
 ---
 
