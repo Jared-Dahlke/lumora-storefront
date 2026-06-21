@@ -31,7 +31,9 @@ jobs:
         run: pnpm build
 
       - name: Deploy to Netlify (production)
-        run: npx -y netlify-cli@latest deploy --prod --no-build --dir=dist --site="$NETLIFY_SITE_ID"
+        # --functions is required so the token BFF (netlify/functions/) ships; --no-build skips
+        # framework build but functions are still bundled from this dir at deploy time.
+        run: npx -y netlify-cli@latest deploy --prod --no-build --dir=dist --functions=netlify/functions --site="$NETLIFY_SITE_ID"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: fa792c78-0108-4e3c-b89c-24d7dcdbf516
