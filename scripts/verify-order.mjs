@@ -3,8 +3,12 @@
 const API = process.env.VITE_API_BASE_URL || 'https://openct-api.onrender.com';
 const AUTH = process.env.VITE_AUTH_BASE_URL || 'https://openct-auth.onrender.com';
 const PROJECT_KEY = process.env.VITE_PROJECT_KEY || 'openct-dev';
-const CLIENT_ID = process.env.VITE_CLIENT_ID || 'lumora-store';
-const CLIENT_SECRET = process.env.VITE_CLIENT_SECRET || 'Dk9ECs80MehnXH-biDZT4qKJSxUwgw7j';
+const CLIENT_ID = process.env.CLIENT_ID || 'lumora-store';
+const CLIENT_SECRET = process.env.CLIENT_SECRET; // no hard-coded fallback — set it in the env
+if (!CLIENT_SECRET) {
+  console.error('Set CLIENT_SECRET in the environment before running this script (no default).');
+  process.exit(1);
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

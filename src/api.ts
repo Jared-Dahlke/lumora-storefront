@@ -4,8 +4,8 @@ import { STOREFRONT_SKUS, isSubscriptionSku } from './catalog';
 const API = import.meta.env.VITE_API_BASE_URL || 'https://openct-api.onrender.com';
 const AUTH = import.meta.env.VITE_AUTH_BASE_URL || 'https://openct-auth.onrender.com';
 const PROJECT_KEY = import.meta.env.VITE_PROJECT_KEY || 'openct-dev';
-const CLIENT_ID = import.meta.env.VITE_CLIENT_ID || 'lumora-store';
-const CLIENT_SECRET = import.meta.env.VITE_CLIENT_SECRET || 'Dk9ECs80MehnXH-biDZT4qKJSxUwgw7j';
+// The OAuth client credentials live server-side in the token BFF (see netlify/functions/token.mjs),
+// reached at the same-origin /api/token endpoint — they are never shipped to the browser.
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -23,29 +23,22 @@ export function warmUp(): void {
 let cachedToken: string | null = null;
 
 /**
- * Fetch an anonymous OAuth token. Retries with backoff to survive cold starts
- * (Render free tier can take 20-50s to spin up).
+ * Fetch an anonymous OAuth token from the same-origin token BFF (a Netlify Function that holds
+ * the client credentials server-side — see netlify/functions/token.mjs). Retries with backoff to
+ * survive cold starts (Render free tier can take 20-50s to spin up).
  */
 export async function getAnonymousToken(maxAttempts = 8): Promise<string> {
   if (cachedToken) return cachedToken;
-  const basic = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
   let lastErr: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const res = await fetch(`${AUTH}/oauth/${PROJECT_KEY}/anonymous/token`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${basic}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials',
-      });
+      const res = await fetch('/api/token', { headers: { Accept: 'application/json' } });
       if (res.ok) {
         const data = await res.json();
         cachedToken = data.access_token as string;
         return cachedToken;
       }
-      lastErr = new Error(`Auth responded ${res.status}`);
+      lastErr = new Error(`Token endpoint responded ${res.status}`);
     } catch (e) {
       lastErr = e;
     }
