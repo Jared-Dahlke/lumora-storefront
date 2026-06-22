@@ -261,8 +261,8 @@ export async function fetchProducts(): Promise<Product[]> {
   if (!res.ok) throw new Error(`Could not load products (${res.status})`);
   const data = await res.json();
   const all = (data.results as ProductProjection[]).map(toProduct);
-  // Offer a curated set of exactly four products (one of which is the subscription), ordered to
-  // match STOREFRONT_SKUS. Falls back to all products if the curated SKUs aren't found.
+  // Offer the curated set (one of which is the subscription), ordered to match STOREFRONT_SKUS.
+  // Falls back to all products if the curated SKUs aren't found.
   const rank = new Map(STOREFRONT_SKUS.map((s, i) => [s.toUpperCase(), i]));
   const curated = all
     .filter((p) => rank.has(p.sku.toUpperCase()))

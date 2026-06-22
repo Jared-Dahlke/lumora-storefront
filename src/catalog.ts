@@ -1,9 +1,22 @@
-// Storefront curation: Lumora deliberately offers a focused set of four products — one of which is
-// a subscription (a consumable bought on a recurring schedule, wired to the ctpro Recurring Orders
+// Storefront curation: the SKUs the storefront surfaces, in display order — one of which is a
+// subscription (a consumable bought on a recurring schedule, wired to the ctpro Recurring Orders
 // API). Keeping the curated SKUs + subscription config here makes the offer explicit.
 
-/** The exactly-four SKUs the storefront offers (uppercase, matching the seeded ctpro catalog). */
-export const STOREFRONT_SKUS = ['LUMORA-ONE', 'LUMORA-RING', 'DEEP-SLEEP', 'DAILY-RESET'];
+/**
+ * The SKUs the storefront offers (uppercase, matching the seeded ctpro catalog), in display order:
+ * devices first, then supplements, then the membership. `fetchProducts()` ranks results by this
+ * list and falls back to all products if none match.
+ */
+export const STOREFRONT_SKUS = [
+  'LUMORA-ONE',
+  'LUMORA-RING',
+  'LUMORA-BAND',
+  'DAILY-RESET',
+  'DEEP-SLEEP',
+  'MORNING-CLARITY',
+  'OMEGA-RESTORE',
+  'LUMORA-PLUS',
+];
 
 /**
  * The subscription product: a consumable offered as "Subscribe & Save" on a recurring schedule.
