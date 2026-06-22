@@ -5,7 +5,7 @@
 [build.environment]
   VITE_API_BASE_URL = "https://openct-api.onrender.com"
   VITE_AUTH_BASE_URL = "https://openct-auth.onrender.com"
-  VITE_PROJECT_KEY = "openct-dev"
+  VITE_PROJECT_KEY = "personal"
 
 # The OAuth client secret is NOT a build/Vite var (those end up in the public bundle). It is held
 # server-side by the token BFF below and set as a *runtime* env var in the Netlify dashboard:

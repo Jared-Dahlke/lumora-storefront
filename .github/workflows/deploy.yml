@@ -29,6 +29,13 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          # The SPA reads VITE_* at build time (Vite inlines them into the bundle). The GitHub
+          # Actions runner — not Netlify's cloud build — is the real builder, so the project key
+          # must be set here. Points the storefront at Jared's `personal` project (the account
+          # created via Merchant Center self-service signup). The token BFF's runtime PROJECT_KEY
+          # (Netlify env) must match.
+          VITE_PROJECT_KEY: personal
 
       - name: Deploy to Netlify (production)
         # --functions is required so the token BFF (netlify/functions/) ships; --no-build skips
